@@ -307,6 +307,7 @@ public class MQClientInstance {
 
         this.scheduledExecutorService.scheduleAtFixedRate(() -> {
             try {
+                //#oy: 这里会提交全部offset
                 MQClientInstance.this.persistAllConsumerOffset();
             } catch (Exception e) {
                 log.error("ScheduledTask persistAllConsumerOffset exception", e);

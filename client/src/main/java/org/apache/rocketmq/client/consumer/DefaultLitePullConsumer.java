@@ -20,6 +20,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
 import org.apache.rocketmq.client.ClientConfig;
 import org.apache.rocketmq.client.consumer.rebalance.AllocateMessageQueueAveragely;
 import org.apache.rocketmq.client.consumer.store.OffsetStore;
@@ -39,10 +40,16 @@ import org.apache.rocketmq.remoting.protocol.heartbeat.MessageModel;
 import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
+/**
+ * 主动拉取消息消费者类
+ */
 public class DefaultLitePullConsumer extends ClientConfig implements LitePullConsumer {
 
     private static final Logger log = LoggerFactory.getLogger(DefaultLitePullConsumer.class);
 
+    /**
+     * 核心拉取消费逻辑实现类
+     */
     private final DefaultLitePullConsumerImpl defaultLitePullConsumerImpl;
 
     /**
@@ -154,6 +161,9 @@ public class DefaultLitePullConsumer extends ClientConfig implements LitePullCon
      */
     private long topicMetadataCheckIntervalMillis = 30 * 1000;
 
+    /**
+     * 默认录取最新的未消费的消息
+     */
     private ConsumeFromWhere consumeFromWhere = ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET;
 
     /**
@@ -206,7 +216,7 @@ public class DefaultLitePullConsumer extends ClientConfig implements LitePullCon
      * Constructor specifying consumer group, RPC hook
      *
      * @param consumerGroup Consumer group.
-     * @param rpcHook RPC hook to execute before each remoting command.
+     * @param rpcHook       RPC hook to execute before each remoting command.
      */
     public DefaultLitePullConsumer(final String consumerGroup, RPCHook rpcHook) {
         this(null, consumerGroup, rpcHook);
@@ -216,7 +226,7 @@ public class DefaultLitePullConsumer extends ClientConfig implements LitePullCon
      * Constructor specifying namespace, consumer group and RPC hook.
      *
      * @param consumerGroup Consumer group.
-     * @param rpcHook RPC hook to execute before each remoting command.
+     * @param rpcHook       RPC hook to execute before each remoting command.
      */
     public DefaultLitePullConsumer(final String namespace, final String consumerGroup, RPCHook rpcHook) {
         this.namespace = namespace;
@@ -266,6 +276,7 @@ public class DefaultLitePullConsumer extends ClientConfig implements LitePullCon
     public void unsubscribe(String topic) {
         this.defaultLitePullConsumerImpl.unsubscribe(withNamespace(topic));
     }
+
     @Override
     public void assign(Collection<MessageQueue> messageQueues) {
         defaultLitePullConsumerImpl.assign(queuesWithNamespace(messageQueues));
@@ -313,7 +324,7 @@ public class DefaultLitePullConsumer extends ClientConfig implements LitePullCon
 
     @Override
     public void registerTopicMessageQueueChangeListener(String topic,
-        TopicMessageQueueChangeListener topicMessageQueueChangeListener) throws MQClientException {
+                                                        TopicMessageQueueChangeListener topicMessageQueueChangeListener) throws MQClientException {
         this.defaultLitePullConsumerImpl.registerTopicMessageQueueChangeListener(withNamespace(topic), topicMessageQueueChangeListener);
     }
 
@@ -324,6 +335,7 @@ public class DefaultLitePullConsumer extends ClientConfig implements LitePullCon
 
     /**
      * Offset specified by batch commit
+     *
      * @param offsetMap
      * @param persist
      */
@@ -557,8 +569,8 @@ public class DefaultLitePullConsumer extends ClientConfig implements LitePullCon
 
     public void setConsumeFromWhere(ConsumeFromWhere consumeFromWhere) {
         if (consumeFromWhere != ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET
-            && consumeFromWhere != ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET
-            && consumeFromWhere != ConsumeFromWhere.CONSUME_FROM_TIMESTAMP) {
+                && consumeFromWhere != ConsumeFromWhere.CONSUME_FROM_LAST_OFFSET
+                && consumeFromWhere != ConsumeFromWhere.CONSUME_FROM_TIMESTAMP) {
             throw new RuntimeException("Invalid ConsumeFromWhere Value", null);
         }
         this.consumeFromWhere = consumeFromWhere;
@@ -587,7 +599,7 @@ public class DefaultLitePullConsumer extends ClientConfig implements LitePullCon
                 traceDispatcher.getTraceProducer().setUseTLS(this.isUseTLS());
                 this.traceDispatcher = traceDispatcher;
                 this.defaultLitePullConsumerImpl.registerConsumeMessageHook(
-                    new ConsumeMessageTraceHookImpl(traceDispatcher));
+                        new ConsumeMessageTraceHookImpl(traceDispatcher));
             } catch (Throwable e) {
                 log.error("system mqtrace hook init failed ,maybe can't send msg trace data");
             }

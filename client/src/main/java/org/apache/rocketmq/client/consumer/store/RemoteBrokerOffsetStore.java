@@ -148,12 +148,19 @@ public class RemoteBrokerOffsetStore implements OffsetStore {
         }
     }
 
+    /**
+     * 同步offset 到broker
+     * @param mq
+     */
     @Override
     public void persist(MessageQueue mq) {
         AtomicLong offset = this.offsetTable.get(mq);
         if (offset != null) {
             try {
+
+                //#oy: 真正同步
                 this.updateConsumeOffsetToBroker(mq, offset.get());
+
                 log.info("[persist] Group: {} ClientId: {} updateConsumeOffsetToBroker {} {}",
                     this.groupName,
                     this.mQClientFactory.getClientId(),
