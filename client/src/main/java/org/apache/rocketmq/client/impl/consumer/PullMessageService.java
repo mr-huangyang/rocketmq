@@ -21,6 +21,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.rocketmq.client.impl.factory.MQClientInstance;
 import org.apache.rocketmq.common.ServiceThread;
 import org.apache.rocketmq.common.message.MessageRequestMode;
@@ -29,7 +30,10 @@ import org.apache.rocketmq.logging.org.slf4j.Logger;
 import org.apache.rocketmq.logging.org.slf4j.LoggerFactory;
 
 /**
+ * 该类是一个Runnable,内部包含一个Thread
  * push 拉取数据task
+ *
+ * @see MQClientInstance#pullMessageService#pullMessage(PullRequest) --> DefaultMQPushConsumerImpl#pullMessage(PullRequest)
  */
 public class PullMessageService extends ServiceThread {
     private final Logger logger = LoggerFactory.getLogger(PullMessageService.class);
@@ -37,12 +41,12 @@ public class PullMessageService extends ServiceThread {
 
     private final MQClientInstance mQClientFactory;
     private final ScheduledExecutorService scheduledExecutorService = Executors
-        .newSingleThreadScheduledExecutor(new ThreadFactory() {
-            @Override
-            public Thread newThread(Runnable r) {
-                return new Thread(r, "PullMessageServiceScheduledThread");
-            }
-        });
+            .newSingleThreadScheduledExecutor(new ThreadFactory() {
+                @Override
+                public Thread newThread(Runnable r) {
+                    return new Thread(r, "PullMessageServiceScheduledThread");
+                }
+            });
 
     public PullMessageService(MQClientInstance mQClientFactory) {
         this.mQClientFactory = mQClientFactory;
@@ -122,6 +126,10 @@ public class PullMessageService extends ServiceThread {
         }
     }
 
+    /**
+     * push:run 拉取的核心入口： 从请求队列 messageRequestQueue 取出消费请求
+     * 通过{@link DefaultMQPushConsumerImpl#pullMessage(PullRequest)} 方法取消息
+     */
     @Override
     public void run() {
         logger.info(this.getServiceName() + " service started");
@@ -130,9 +138,9 @@ public class PullMessageService extends ServiceThread {
             try {
                 MessageRequest messageRequest = this.messageRequestQueue.take();
                 if (messageRequest.getMessageRequestMode() == MessageRequestMode.POP) {
-                    this.popMessage((PopRequest)messageRequest);
+                    this.popMessage((PopRequest) messageRequest);
                 } else {
-                    this.pullMessage((PullRequest)messageRequest);
+                    this.pullMessage((PullRequest) messageRequest);
                 }
             } catch (InterruptedException ignored) {
             } catch (Exception e) {
