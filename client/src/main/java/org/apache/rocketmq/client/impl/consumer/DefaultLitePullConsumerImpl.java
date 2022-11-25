@@ -134,6 +134,9 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
 
     private DefaultLitePullConsumer defaultLitePullConsumer;
 
+    /**
+     * 每个队列一个拉取任务
+     */
     private final ConcurrentMap<MessageQueue, PullTaskImpl> taskTable = new ConcurrentHashMap<>();
 
     private AssignedMessageQueue assignedMessageQueue = new AssignedMessageQueue();
@@ -327,7 +330,6 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
 
                 mQClientFactory.start();
 
-                //#oy: -- 启动pull消费
                 startScheduleTask();
 
                 this.serviceState = ServiceState.RUNNING;
@@ -479,7 +481,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
                 PullTaskImpl pullTask = new PullTaskImpl(messageQueue);
 
                 this.taskTable.put(messageQueue, pullTask);
-                //#oy: 执行拉取任务
+                //#oy: 执行拉取任务,任务会绑定一个线程，不断loop消息
                 this.scheduledThreadPoolExecutor.schedule(pullTask, 0, TimeUnit.MILLISECONDS);
             }
         }
@@ -902,7 +904,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
     }
 
     /**
-     * 消息拉取任实现
+     * 消息拉取任实现: 在run方法拉取消息后，会再次把自己放入executor重复执行
      */
     public class PullTaskImpl implements Runnable {
         private final MessageQueue messageQueue;
@@ -1042,7 +1044,7 @@ public class DefaultLitePullConsumerImpl implements MQConsumerInner {
                 }
 
                 if (!this.isCancelled()) {
-                    //#oy: 执行拉取任务
+                    //#oy: 执行完，再次进入任务池，等待执行。重复利用task,达到循环的效果
                     scheduledThreadPoolExecutor.schedule(this, pullDelayTimeMills, TimeUnit.MILLISECONDS);
                 } else {
                     log.warn("The Pull Task is cancelled after doPullTask, {}", messageQueue);
